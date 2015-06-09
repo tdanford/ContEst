@@ -52,6 +52,15 @@ public class ContEst {
         variantTree = PositionTree.createTree(variants);
     }
 
+    /**
+     * Given a collection of Reads which overlap a VariantSite, this function displays the
+     * aligned reads so that the corresponding bases of each read line up.
+     *
+     * The display also highlights the portion of each read which overlaps the variant.
+     *
+     * @param vs The variant site that all the reads must overlap
+     * @param rs The collection of reads overlapping the variant site.
+     */
     public void printSiteAndReads(VariantSite vs, Collection<Read> rs) {
         int maxLeft = 0, maxRight = 0;
         for(Read r : rs) {
@@ -71,6 +80,12 @@ public class ContEst {
                 vs.referenceAllele, vs.alternateAllele, vs.contaminatingPopulationFrequency));
     }
 
+    /**
+     * Finds the arg max_i (values[i]) -- choosing arbitrarily between ties.
+     *
+     * @param values The array of values in which to find the maximum
+     * @return The index i whose value achieves the maximum in the array
+     */
     public static int argMax(double[] values) {
         int maxId = -1;
         for(int i = 0; i < values.length; i++) {
@@ -81,6 +96,13 @@ public class ContEst {
         return maxId;
     }
 
+    /**
+     * Given an array of log-likelihoods, produces a corresponding array of log-likelihoods
+     * that have been normalized (in NON-log space, i.e. ret[i] = ll[i] - log(sum(exp(ll[i]))) )
+     *
+     * @param logValues The array of log-likelihoods to be normalized
+     * @return The normalized array of log-likelihoods
+     */
     public static double[] logNormalize(double[] logValues) {
         double[] ns = new double[logValues.length];
         double logSum = 0.0;
@@ -95,6 +117,12 @@ public class ContEst {
         return ns;
     }
 
+    /**
+     * Calculate a grid (array) of likelihoods, at equally-spaced points between [0.0, 1.0].
+     *
+     * @param steps The number of equally-spaced points in the likelihood grid.
+     * @return The grid of likelihoods.
+     */
     public double[] likelihoodGrid(int steps) {
 
         double[] lls = new double[steps];
@@ -110,6 +138,13 @@ public class ContEst {
         return lls;
     }
 
+    /**
+     * Calculates, given the data (reads and variants) the likelihood of a given 'c' value -- that is,
+     * the probability of generating the data given that the rate of contamination is 'c'.
+     *
+     * @param c The given rate of contamination
+     * @return The likelihood of this rate of contamination
+     */
     public double logLikelihoodC(double c) {
         Map<VariantSite, Double> siteLikelihoods = new HashMap<>();
         Map<VariantSite, Integer> siteDepths = new HashMap<>();
@@ -144,14 +179,6 @@ public class ContEst {
         for(i = 0; i < vsLikelihoodArray.length; i++) {
             sum += vsLikelihoodArray[i];
         }
-
-        /*
-        for(VariantSite vs : variants) {
-            logger.info(String.format("Site %s: depth %d", vs, siteDepths.get(vs)));
-            printSiteAndReads(vs, siteReads.get(vs));
-            System.out.println();
-        }
-        */
 
         return sum;
     }
