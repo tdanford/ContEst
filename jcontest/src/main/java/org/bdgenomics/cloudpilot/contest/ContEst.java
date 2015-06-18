@@ -155,6 +155,12 @@ public class ContEst {
             siteDepths.put(vs, 0);
         }
 
+        /*
+        For each read,
+          1. find all the variant sites that overlap it
+          2. calculate the likelihood P( c | ... ) given that read at that site
+          3. multiply each of those likelihoods with the stored likelihoods for each site
+         */
         for(Read r : reads) {
             for(VariantSite site : variantTree.findOverlapping(r.region(), new Accumulator.List<VariantSite>()).list()) {
                 double likelihood = site.readLogLikelihood(c, r);
@@ -164,6 +170,7 @@ public class ContEst {
                     siteLikelihoods.put(site, siteLikelihoods.get(site) + likelihood);
                 }
 
+                // siteDepths are mostly used for debugging and display
                 siteDepths.put(site, siteDepths.get(site) + 1);
                 siteReads.get(site).add(r);
             }
