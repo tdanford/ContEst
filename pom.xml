@@ -22,6 +22,7 @@
     <spark.version>1.2.0</spark.version>
     <parquet.version>1.6.0rc4</parquet.version>
     <adam.version>0.16.1-SNAPSHOT</adam.version>
+	<avocado.version>0.0.3-SNAPSHOT</avocado.version>
     <!-- Edit the following line to configure the Hadoop (HDFS) version. -->
     <hadoop.version>2.2.0</hadoop.version>
     <scoverage.version>0.99.2</scoverage.version>
@@ -322,6 +323,12 @@
         <groupId>org.bdgenomics.adam</groupId>
         <artifactId>adam-core_2.10</artifactId>
         <version>${adam.version}</version>
+      </dependency>
+
+      <dependency>
+	<groupId>org.bdgenomics.avocado</groupId>
+	<artifactId>avocado-core</artifactId>
+	<version>${avocado.version}</version>
       </dependency>
       <dependency>
         <groupId>org.bdgenomics.adam</groupId>
