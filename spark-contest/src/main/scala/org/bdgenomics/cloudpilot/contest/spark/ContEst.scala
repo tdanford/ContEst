@@ -74,7 +74,7 @@ case class VariantSite(variant: Variant, populationAlternateFrequency: Double) e
       not_c + _c
 
     } else if (readBase.equals(variant.getAlternateAllele)) {
-      val not_c: Double = (1.0 - c) * error3;
+      val not_c: Double = (1.0 - c) * error3
       val _c: Double = c * (f * error3 + (1.0 - f) * notError)
       not_c + _c
 
