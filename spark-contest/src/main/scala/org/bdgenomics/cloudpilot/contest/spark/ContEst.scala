@@ -7,11 +7,32 @@ import org.apache.spark.SparkContext._
 
 import org.bdgenomics.formats.avro.{ Variant, AlignmentRecord }
 
+/**
+ * Estimates the cross-individual contamination in next-generating sequencing data,
+ * using the ContEst algorithm (http://bioinformatics.oxfordjournals.org/content/27/18/2601)
+ *
+ * @param reads The set of reads used to estimate the contamination
+ * @param variants A baseline set of variants (and their sites in the genome)
+ */
 class ContEst(val reads: RDD[AlignmentRecord],
               val variants: RDD[VariantSite]) {
 
   import ContEst._
 
+  def estimateContamination() : Double = {
+    val grid : Array[Double] = (0 until 100).map(i => 1.0 * i / 100.0).toArray
+    val lls : Array[Double] = grid.map(logLikelihood)
+
+    grid.zip(lls).maxBy(_._2)._1
+  }
+
+  /**
+   * Calculates the log-likelihood of a particular contamination level, c, given the set of reads
+   * and the set of variant sites.
+   *
+   * @param c The contamination level over which to calculate the log-likelihood
+   * @return The log-likelihood
+   */
   def logLikelihood(c: Double): Double = {
     val joined: RDD[(VariantSite, AlignmentRecord)] =
       ShuffleRegionJoin.partitionAndJoin(variants.keyBy(ContEst.variantRegion), reads.keyBy(ReferenceRegion(_)))
@@ -29,6 +50,20 @@ class ContEst(val reads: RDD[AlignmentRecord],
 
 object ContEst extends Serializable {
 
+  /**
+   * A specialized higher-order helper function -- this function, carry, takes a function
+   * on pairs and produces a second function, on pairs, which produces a pair of the _first_
+   * argument and the return value of the original (input) function.
+   *
+   * So if 'f' is a function such that f(1, 3) = 4, then carry(f)(1, 3) = (1, 4)
+   *
+   * @param f The binary function
+   * @tparam U The type of the first argument to f
+   * @tparam T The type of the second arguemnet to f
+   * @tparam V The return type of f
+   * @return a pair with type (U, V), whose first value is the first value of the input pair and
+   *         whose second value is the result f(U, V) of calling the function on the input pair.
+   */
   def carry[U, T, V](f: (U, T) => V): ((U, T)) => (U, V) = {
     def carried(p: (U, T)): (U, V) = {
       p match {
@@ -38,6 +73,20 @@ object ContEst extends Serializable {
     carried
   }
 
+  /**
+   * Helper higher-order function, transforms a function into a function from pairs to
+   * pairs, carrying through the original argument.
+   *
+   * So, if 'f' is a function such that f(1) = 10, then lift(f)(1) = (1, 10)
+   *
+   * In other words, the argument is carried through with the "original" result as a pair.
+   *
+   * @param f
+   * @tparam U
+   * @tparam T
+   * @tparam V
+   * @return
+   */
   def lift[U, T, V](f: T => V): ((U, T)) => (U, V) = {
     def lifted(p: (U, T)): (U, V) = {
       p match {
@@ -58,8 +107,24 @@ object ContEst extends Serializable {
     ReferenceRegion(vs.variant.getContig.getContigName, vs.variant.getStart, vs.variant.getEnd)
 }
 
+/**
+ *
+ * @param variant The variant with-respect-to-which we are calculating the likelihood of any read.
+ * @param populationAlternateFrequency a frequency, specific to this Variant
+ */
 case class VariantSite(variant: Variant, populationAlternateFrequency: Double) extends Serializable {
 
+  /**
+   * Core likelihood function.
+   *
+   * The likelihood of a read, given the contamination estimate c.
+   *
+   * This is basically the third (unnumbered) equation from the first page of the ContEST paper.
+   *
+   * @param c
+   * @param read
+   * @return
+   */
   def logLikelihood(c: Double, read: AlignmentRecord): Double = {
     val offset: Int = (variant.getStart - read.getStart).toInt
     val readBase: String = read.getSequence.substring(offset, offset + 1)
