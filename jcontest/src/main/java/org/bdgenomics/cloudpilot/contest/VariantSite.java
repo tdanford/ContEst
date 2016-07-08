@@ -84,12 +84,12 @@ public class VariantSite extends Position {
 
         if(readBase.equals(referenceAllele)) {
             double not_c = (1.0-c) * notError;
-            double _c = c * (f * error3 + (1.0 - f) * notError);
+            double _c = c * (f * notError + (1.0 - f) * error3);
             return not_c + _c;
 
         } else if (readBase.equals(alternateAllele)) {
             double not_c = (1.0 - c) * error3;
-            double _c = c * (f * notError + (1.0 - f) * error3);
+            double _c = c * (f * error3 + (1.0 - f) * notError);
             return not_c + _c;
 
         } else {

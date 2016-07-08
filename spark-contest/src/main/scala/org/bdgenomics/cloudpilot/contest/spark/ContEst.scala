@@ -19,9 +19,9 @@ class ContEst(val reads: RDD[AlignmentRecord],
 
   import ContEst._
 
-  def estimateContamination() : Double = {
-    val grid : Array[Double] = (0 until 100).map(i => 1.0 * i / 100.0).toArray
-    val lls : Array[Double] = grid.map(logLikelihood)
+  def estimateContamination(): Double = {
+    val grid: Array[Double] = (0 until 100).map(i => 1.0 * i / 100.0).toArray
+    val lls: Array[Double] = grid.map(logLikelihood)
 
     grid.zip(lls).maxBy(_._2)._1
   }
@@ -108,6 +108,12 @@ object ContEst extends Serializable {
 }
 
 /**
+ * In the ContEST paper, the variable 'i' indexes the sites of know variation, where
+ * A_i is the reference allele (and \bar{A}_i the non-reference allele) at that site, and
+ * f_i is the alternative (contaminating) population frequency of the variant.
+ *
+ * This class, VariantSite, encapsulates both the A_i and the f_i for a particular
+ * variant site i.
  *
  * @param variant The variant with-respect-to-which we are calculating the likelihood of any read.
  * @param populationAlternateFrequency a frequency, specific to this Variant
@@ -121,9 +127,11 @@ case class VariantSite(variant: Variant, populationAlternateFrequency: Double) e
    *
    * This is basically the third (unnumbered) equation from the first page of the ContEST paper.
    *
-   * @param c
-   * @param read
-   * @return
+   * This code is adapted from the VariantSite.readLikelihood method in the jcontext package.
+   *
+   * @param c The contaminating fraction which is the primary parameter in the likelihood
+   * @param read The read whose likelihood we are assessing.
+   * @return The likelihood of the read given the contaminating fraction.
    */
   def logLikelihood(c: Double, read: AlignmentRecord): Double = {
     val offset: Int = (variant.getStart - read.getStart).toInt
@@ -131,19 +139,28 @@ case class VariantSite(variant: Variant, populationAlternateFrequency: Double) e
     val error: Double = ContEst.phredToError(read.getQual.charAt(offset))
     val notError = 1.0 - error
     val error3 = error / 3.0
-    val f: Double = populationAlternateFrequency
+    val f: Double = populationAlternateFrequency // f_i, but the i is implicit in this class
 
     if (readBase.equals(variant.getReferenceAllele)) {
+      /*
+      "if b_{ij} = A_i"
+       */
       val not_c: Double = (1.0 - c) * notError
-      val _c: Double = c * (f * error3 + (1.0 - f) * notError)
+      val _c: Double = c * (f * notError + (1.0 - f) * error3)
       not_c + _c
 
     } else if (readBase.equals(variant.getAlternateAllele)) {
+      /*
+      "if b_{ij} = \bar{A}_i"
+       */
       val not_c: Double = (1.0 - c) * error3
       val _c: Double = c * (f * error3 + (1.0 - f) * notError)
       not_c + _c
 
     } else {
+      /*
+      "otherwise"
+       */
       error3
     }
   }
