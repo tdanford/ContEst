@@ -19,6 +19,12 @@ class ContEst(val reads: RDD[AlignmentRecord],
 
   import ContEst._
 
+  /**
+   * This is the main entry-point to the code -- it estimates a contamination parameter 'c'
+   * by maximum-likelihood over a grid of possible values.
+   *
+   * @return The 'c' which maximizes the likelihood in the grid of possible values.
+   */
   def estimateContamination(): Double = {
     val grid: Array[Double] = (0 until 100).map(i => 1.0 * i / 100.0).toArray
     val lls: Array[Double] = grid.map(logLikelihood)
